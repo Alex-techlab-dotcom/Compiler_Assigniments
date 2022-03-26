@@ -44,7 +44,7 @@ class TernaryEvaluator {
 
     public int start() throws IOException, ParseError {
         int value = expression();
-        System.out.print("end of story\n");
+        //System.out.print("end of story\n");
         if (lookahead != -1 && lookahead != '\n') throw new ParseError();
         return value;
     }
@@ -60,17 +60,17 @@ class TernaryEvaluator {
     private int andExpressionTail(int number) throws IOException, ParseError {
         int sum;
         switch (lookahead) {
-            case '&':
-                System.out.printf("inside the andExpressionTail and the lookahead symbol is %c\n", lookahead);
-                consume('&');
+            case '*':
+                //System.out.printf("inside the andExpressionTail and the lookahead symbol is %c\n", lookahead);
+                consume('*');
                 int resultFromNumber = Number();
-                sum = number & resultFromNumber;
-                System.out.printf("the result from previous andExpressionTail is %d\n", number);
-                System.out.printf("(inside andExpression )the Number function returned %d\n", resultFromNumber);
-                System.out.printf("the sum in andExpression is %d\n", sum);
+                sum = number * resultFromNumber;
+               // System.out.printf("the result from previous andExpressionTail is %d\n", number);
+               // System.out.printf("(inside andExpression )the Number function returned %d\n", resultFromNumber);
+                //System.out.printf("the sum in andExpression is %d\n", sum);
                 return andExpressionTail(sum);
             case '\n':
-            case '^':
+            case '+':
                 return number;
         }
         return number;
@@ -80,17 +80,17 @@ class TernaryEvaluator {
 
     private int xorExpression(int number) throws IOException, ParseError {
         int value = number;
-        if (lookahead == '^') {
-            System.out.print("inside the xorExpresion and the lookahead symbol is ^\n");
-            consume('^');
+        if (lookahead == '+') {
+            //System.out.print("inside the xorExpresion and the lookahead symbol is +\n");
+            consume('+');
             //if (isDigit(lookahead) || isParenthesis(lookahead)) {
-            value = value ^ andExpression();
-            System.out.printf("the total result is %d\n", value);
-            System.out.printf("inside the xorExpresion and the lookahead is %c\n", lookahead);
+            value = value + andExpression();
+            //System.out.printf("the total result is %d\n", value);
+            //System.out.printf("inside the xorExpresion and the lookahead is %c\n", lookahead);
             //}
             return xorExpression(value);
         } else if (lookahead == '\n' || lookahead == ')') {
-            System.out.println("the lookahead is NewLine and xorEpression does nothing\n");
+            //System.out.println("the lookahead is NewLine and xorEpression does nothing\n");
             return number;
         }
         return number;
@@ -98,21 +98,22 @@ class TernaryEvaluator {
     }
 
     private int Number() throws IOException, ParseError {
-        System.out.print("inside number\n");
+        //System.out.print("inside number\n");
         int inputNumber = 0;
         if (isDigit(lookahead)) {
             inputNumber = evalDigit(lookahead);
-            System.out.printf("the Number function returned %d\n", inputNumber);
+            //System.out.printf("the Number function returned %d\n", inputNumber);
             consume(lookahead);
             return inputNumber;
         } else if (isParenthesis(lookahead)) {
-            System.out.print("the Number function returned ( \n");
+            //System.out.print("the Number function returned ( \n");
             consume('(');
             inputNumber = expression();
             consume(')');
-            System.out.print("the Number function returned ) \n");
+           // System.out.print("the Number function returned ) \n");
             return inputNumber;
         }
-        return inputNumber;
+        throw new ParseError();
+        //return inputNumber;
     }
 }
