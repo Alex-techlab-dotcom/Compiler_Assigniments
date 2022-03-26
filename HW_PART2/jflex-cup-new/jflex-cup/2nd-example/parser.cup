@@ -1,0 +1,85 @@
+/* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
+/**
+ *  Package and Import Specifications
+ */
+import java_cup.runtime.*;
+
+/**
+ *  Usercode Components
+ */
+parser code {:
+    // Connect this parser to a scanner!
+    Scanner s;
+    Parser(Scanner s){ this.s=s; }
+:}
+
+/* define how to connect to the scanner! */
+scan with {: return s.next_token(); :};
+
+/**
+ *  Symbol Lists
+ */
+
+/* Terminals (tokens returned by the scanner). */
+terminal            SEMI, CONCAT, MINUS, TIMES, LPAREN, RPAREN, IF, WHILE, FOR, ELSE , PREFIX,REVERSE;
+terminal String     STRING_LITERAL,IDENT;        // our scanner provides numbers as strings
+
+/*  Non terminals */
+non terminal expr_list;
+non terminal Integer    expr;      // used to store evaluated subexpressions
+non terminal  statement;
+non terminal booleanEx;
+non terminal ifStatement;
+non terminal String     prefixList;
+non terminal String     Epsilon;
+non terminal String     EpsilonTail;
+non terminal String     EpsilonTail2;
+non terminal printFormat;
+/**
+ *  Precedence Declarations
+ */
+precedence left  MINUS,CONCAT;
+precedence left TIMES;
+precedence right ELSE, REVERSE;
+
+/**
+ *  The Grammar Rules
+ */
+
+expr_list ::= expr_list expr:e SEMI         {: System.out.println(e);         :}
+            | printFormat expr:e SEMI                   {: System.out.printf("\n\n\n\n\n\n\n\n\n\n");         :};
+
+printFormat::=MINUS                     {: System.out.printf("\n\n\n\n\n\n\n\n\n\n");:};
+expr      ::= statement;
+
+statement::=ifStatement
+            |TIMES                             // {: System.out.printf("}"); :}
+            |;
+
+ifStatement ::= IF LPAREN prefixList:prefixList RPAREN  {:System.out.printf("if ( %s ) {  ",prefixList);:}
+                 statement
+              ELSE               {: System.out.printf("}else {");:}
+                 statement           {: System.out.printf("}"); :}
+              ;
+
+//booleanEx ::= IDENT:str1 PREFIX IDENT:str2        {: RESULT=(str2.startsWith(str1)); System.out.println(str2.startsWith(str1));:};
+
+prefixList::= Epsilon:str1 PREFIX Epsilon:str2 prefixList  {:RESULT=str1+".startsWith("+str2+")";:}
+              |;
+Epsilon::= EpsilonTail:et EpsilonTail2:et2                 {:String s=et+et2; RESULT =s;:};
+
+EpsilonTail2::= CONCAT Epsilon:epsilon                     {: RESULT=""+epsilon;:}
+                |                                          {: RESULT="";:}
+                ;
+
+EpsilonTail::= IDENT:string                                {:RESULT=string;:}
+              | REVERSE EpsilonTail:epsilonTail            {:
+                                                                String newString="",str=epsilonTail;
+                                                                char character;
+                                                                for (int i=0; i<epsilonTail.length(); i++)
+                                                                   {
+                                                                     character= str.charAt(i); //extracts each character
+                                                                     newString= character+newString; //adds each character in front of the existing string
+                                                                   }
+                                                                   RESULT=newString;
+                                                             :};
