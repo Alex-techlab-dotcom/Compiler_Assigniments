@@ -21,46 +21,58 @@ scan with {: return s.next_token(); :};
  */
 
 /* Terminals (tokens returned by the scanner). */
-terminal            SEMI, CONCAT, MINUS, TIMES, LPAREN, RPAREN, IF, WHILE, FOR, ELSE , PREFIX,REVERSE;
+terminal            SEMI, CONCAT, MINUS, TIMES, LPAREN, RPAREN, IF, WHILE, FOR, ELSE , PREFIX,REVERSE,PRINT,RBRACET,LBRACET,COMA;
 terminal String     STRING_LITERAL,IDENT;        // our scanner provides numbers as strings
 
 /*  Non terminals */
 non terminal expr_list;
-non terminal Integer    expr;      // used to store evaluated subexpressions
-non terminal  statement;
+non terminal expr;      // used to store evaluated subexpressions
+non terminal String     statement,body;
 non terminal booleanEx;
-non terminal ifStatement;
+non terminal String     ifElse;
 non terminal String     prefixList;
 non terminal String     Epsilon;
 non terminal String     EpsilonTail;
 non terminal String     EpsilonTail2;
 non terminal printFormat;
+non terminal funcDec, funcCall,funcDecList;
+non terminal String,argsList,argsListTail;
 /**
  *  Precedence Declarations
  */
 precedence left  MINUS,CONCAT;
-precedence left TIMES;
-precedence right ELSE, REVERSE;
+precedence left IF , ELSE,TIMES;
+precedence right REVERSE;
 
 /**
  *  The Grammar Rules
  */
 
-expr_list ::= expr_list expr:e SEMI         {: System.out.println(e);         :}
-            | printFormat expr:e SEMI                   {: System.out.printf("\n\n\n\n\n\n\n\n\n\n");         :};
+expr_list ::=expr:e  {:System.out.println();:};
 
-printFormat::=MINUS                     {: System.out.printf("\n\n\n\n\n\n\n\n\n\n");:};
-expr      ::= statement;
 
-statement::=ifStatement
+expr      ::= statement:stm                                {: System.out.printf("\npublic class Main {\n");
+                                                           System.out.printf("  public static void main(String[] args) {\n");
+                                                           System.out.printf("\t%s",stm);
+                                                           System.out.printf(" }\n");
+                                                           System.out.printf("}");
+                                                           :}
+           |funcDecList;
+
+body::=statement:bodyFunction                     {:RESULT = bodyFunction;:};
+
+statement::=ifElse:ifElse                         {: RESULT=ifElse; :}
             |TIMES                             // {: System.out.printf("}"); :}
-            |;
+            ;
 
-ifStatement ::= IF LPAREN prefixList:prefixList RPAREN  {:System.out.printf("if ( %s ) {  ",prefixList);:}
-                 statement
-              ELSE               {: System.out.printf("}else {");:}
-                 statement           {: System.out.printf("}"); :}
-              ;
+ifElse ::= IF LPAREN prefixList:prefixList RPAREN
+                 statement:stm1
+              ELSE
+                 statement:stm2
+                 {:
+                    RESULT=  "if ("+prefixList+") {"+System.getProperty("line.separator")+
+                    "\t"+stm1+System.getProperty("line.separator")+"\t} else {"+System.getProperty("line.separator")+"\t"+stm2+"}";
+                 :};
 
 //booleanEx ::= IDENT:str1 PREFIX IDENT:str2        {: RESULT=(str2.startsWith(str1)); System.out.println(str2.startsWith(str1));:};
 
@@ -68,11 +80,11 @@ prefixList::= Epsilon:str1 PREFIX Epsilon:str2 prefixList  {:RESULT=str1+".start
               |;
 Epsilon::= EpsilonTail:et EpsilonTail2:et2                 {:String s=et+et2; RESULT =s;:};
 
-EpsilonTail2::= CONCAT Epsilon:epsilon                     {: RESULT=""+epsilon;:}
+EpsilonTail2::= CONCAT Epsilon:epsilon                     {: RESULT="+"+epsilon;:}
                 |                                          {: RESULT="";:}
                 ;
 
-EpsilonTail::= IDENT:string                                {:RESULT=string;:}
+EpsilonTail::= IDENT:string                                {:RESULT='"'+string+'"';:}
               | REVERSE EpsilonTail:epsilonTail            {:
                                                                 String newString="",str=epsilonTail;
                                                                 char character;
@@ -81,5 +93,21 @@ EpsilonTail::= IDENT:string                                {:RESULT=string;:}
                                                                      character= str.charAt(i); //extracts each character
                                                                      newString= character+newString; //adds each character in front of the existing string
                                                                    }
-                                                                   RESULT=newString;
-                                                             :};
+                                                                   RESULT=newString;:};
+
+
+funcDecList::= funcDec funcDecList
+               |funcCall
+               |;
+
+funcDec::= IDENT:functionName LPAREN argsList:myArgs RPAREN LBRACET body:funcBody RBRACET   {:RESULT="public static String "+functionName+"( "+myArgs+" ){"
+                                                                                                +System.getProperty("line.separator")+"\t"+funcBody+" }";
+                                                                                                System.out.printf("\n%s",RESULT);:};
+
+argsList::= IDENT:argument argsListTail:nextArguments                         {: RESULT="String "+argument+nextArguments;:}
+            |;
+
+argsListTail::= COMA IDENT:argument argsListTail:nextArguments                {: RESULT =", "+"String "+argument+nextArguments;:}
+            |                                                                 {:RESULT="";:};
+
+funcCall::=IDENT:functionName LPAREN argsList:myArgs RPAREN                   {:System.out.println("Function call\n");:};

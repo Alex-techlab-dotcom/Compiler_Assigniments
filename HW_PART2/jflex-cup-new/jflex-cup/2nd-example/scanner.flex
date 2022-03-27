@@ -65,6 +65,7 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 
 <YYINITIAL> {
 /* operators */
+ "p"            { return symbol(sym.PRINT);}
  "+"            { return symbol(sym.CONCAT); }
  "-"            { return symbol(sym.MINUS); }
  "*"            { return symbol(sym.TIMES); }
@@ -77,9 +78,12 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
  "while"        { return symbol(sym.WHILE);}
  "prefix"       { return symbol(sym.PREFIX);}
  "reverse"      { return symbol(sym.REVERSE);}
+  "{"           { return symbol(sym.LBRACET);}
+   "}"          {return symbol(sym.RBRACET);}
+   ","          {return symbol(sym.COMA);}
  \"             { stringBuffer.setLength(0); yybegin(STRING); }
  {WhiteSpace}   { /* just skip what was found, do nothing */ }
- {I}        { return symbol(sym.IDENT,yytext()); }
+ {I}            { return symbol(sym.IDENT,yytext()); }
 }
 
 <STRING> {
@@ -87,7 +91,7 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
                                        return symbol(sym.STRING_LITERAL, stringBuffer.toString()); }
       [^\n\r\"\\]+                   { stringBuffer.append( yytext() ); }
       \\t                            { stringBuffer.append('\t'); }
-      \\n                            { stringBuffer.append('\n'); }
+     \\n                            { stringBuffer.append('\n'); }
 
       \\r                            { stringBuffer.append('\r'); }
       \\\"                           { stringBuffer.append('\"'); }
