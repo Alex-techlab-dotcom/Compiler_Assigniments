@@ -1,6 +1,5 @@
 /* JFlex example: part of Java language lexer specification */
 import java_cup.runtime.*;
-/**
 %%
 /* -----------------Options and Declarations Section----------------- */
 

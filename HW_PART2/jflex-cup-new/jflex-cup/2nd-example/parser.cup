@@ -35,13 +35,15 @@ non terminal String     Epsilon;
 non terminal String     EpsilonTail;
 non terminal String     EpsilonTail2;
 non terminal printFormat;
-non terminal funcDec, funcCall,funcDecList;
-non terminal String,argsList,argsListTail;
+non terminal String funcDec, funcCall;
+non terminal String,argsList,argsListTail,funcDecList;
+non terminal myClass;
+non terminal  J;
 /**
  *  Precedence Declarations
  */
 precedence left  MINUS,CONCAT;
-precedence left IF , ELSE,TIMES;
+precedence left IF,ELSE,TIMES;
 precedence right REVERSE;
 
 /**
@@ -57,8 +59,8 @@ expr      ::= statement:stm                                {: System.out.printf(
                                                            System.out.printf(" }\n");
                                                            System.out.printf("}");
                                                            :}
-           |funcDecList;
-
+           | funcDecList:f                                  {:System.out.printf("%s",f);:};
+myclass::=SEMI {: class MyClass{String s1="k";}; MyClass myclass=new MyClass(); System.out.printf("%s\n",myclass.s1);:};
 body::=statement:bodyFunction                     {:RESULT = bodyFunction;:};
 
 statement::=ifElse:ifElse                         {: RESULT=ifElse; :}
@@ -96,13 +98,14 @@ EpsilonTail::= IDENT:string                                {:RESULT='"'+string+'
                                                                    RESULT=newString;:};
 
 
-funcDecList::= funcDec funcDecList
-               |funcCall
-               |;
+funcDecList::= funcDec:fd funcDecList:fdl                            {:RESULT=fd+fdl;:}
+               |funcCall:fc funcDecList:fdl                          {:RESULT=fc+fdl;:}
+               |                                                     {:RESULT="";:};
 
 funcDec::= IDENT:functionName LPAREN argsList:myArgs RPAREN LBRACET body:funcBody RBRACET   {:RESULT="public static String "+functionName+"( "+myArgs+" ){"
-                                                                                                +System.getProperty("line.separator")+"\t"+funcBody+" }";
-                                                                                                System.out.printf("\n%s",RESULT);:};
+                                                                                                +System.getProperty("line.separator")+"\t"+funcBody+" }"+"\n";
+                                                                                                //System.out.printf("\n%s",RESULT);
+                                                                                                :};
 
 argsList::= IDENT:argument argsListTail:nextArguments                         {: RESULT="String "+argument+nextArguments;:}
             |;
@@ -110,4 +113,4 @@ argsList::= IDENT:argument argsListTail:nextArguments                         {:
 argsListTail::= COMA IDENT:argument argsListTail:nextArguments                {: RESULT =", "+"String "+argument+nextArguments;:}
             |                                                                 {:RESULT="";:};
 
-funcCall::=IDENT:functionName LPAREN argsList:myArgs RPAREN                   {:System.out.println("Function call\n");:};
+funcCall::=IDENT:functionName LPAREN argsList:myArgs RPAREN                   {:RESULT="function call\n";System.out.println("Function call\n");:};
