@@ -64,6 +64,7 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 
 <YYINITIAL> {
 /* operators */
+ 
  "p"            { return symbol(sym.PRINT);}
  "+"            { return symbol(sym.CONCAT); }
  "-"            { return symbol(sym.MINUS); }

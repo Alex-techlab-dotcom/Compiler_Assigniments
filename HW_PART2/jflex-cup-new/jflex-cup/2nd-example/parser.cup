@@ -35,7 +35,7 @@ non terminal String     Epsilon;
 non terminal String     reverse;
 non terminal String     concatenation;
 non terminal String     funcDecList;
-non terminal String funcDec, funcCall;
+non terminal String funcDec, funcCall,ifElseTail;
 non terminal String argsList,argsListTail;
 non terminal String ifexp;
 
@@ -83,7 +83,8 @@ expr::=          funcDecList:f                                  {:
 body::=statement:bodyFunction                     {:RESULT = bodyFunction;:};
 
 statement::=ifElse:ifElse                         {: RESULT=ifElse; :}
-            |IDENT:var                            {:RESULT='"'+var+'"';:}
+            |Epsilon:expression                   {:RESULT=expression;:}
+            |funcCall:functionCall                {:RESULT=functionCall;:}
             ;
 
 ifElse ::= IF LPAREN prefixList:prefixList RPAREN
@@ -92,21 +93,22 @@ ifElse ::= IF LPAREN prefixList:prefixList RPAREN
                  statement:stm2
                  {:
                     RESULT= prefixList+" ? "+stm1+" : "+stm2;
-                 :}
-                 |                                          {:RESULT="";:};
+                 :};
 
-//booleanEx ::= IDENT:str1 PREFIX IDENT:str2        {: RESULT=(str2.startsWith(str1)); System.out.println(str2.startsWith(str1));:};
 
-prefixList::= Epsilon:str1 PREFIX Epsilon:str2   {:RESULT="("+str1+")"+".startsWith("+str2+")";:};
 
-Epsilon::= reverse:et concatenation:et2  ifElse:ifexp      {:String s;
-                                                             if (ifexp.length()==0)s=et+et2+ifexp;
-                                                             else s=et+et2+"("+ifexp+")";
-                                                             RESULT =s;
+
+prefixList::= Epsilon:str1 PREFIX Epsilon:str2          {:RESULT="("+str2+")"+".startsWith("+str1+")";:};
+
+Epsilon::= reverse:et concatenation:et2  ifElseTail:ifexp     {:String s;
+                                                                if (ifexp.length()==0)s=et+et2+ifexp;
+                                                                else s=et+et2+"("+ifexp+")";
+                                                                RESULT =s;
                                                              :};
 
 
-
+ifElseTail::=ifElse:ifexp           {:RESULT=ifexp;:}
+            |                       {:RESULT="";:};
 
 concatenation::= CONCAT Epsilon:epsilon                     {: RESULT="+"+epsilon;:}
                 |                                           {: RESULT="";:}
@@ -135,7 +137,7 @@ funcDec::= IDENT:functionName LPAREN argsList:myArgs RPAREN LBRACET body:funcBod
                                                                                                 :};
 
 argsList::= IDENT:argument argsListTail:nextArguments                         {: RESULT="String "+argument+nextArguments;:}
-            |;
+            |                                                                  {:RESULT="";:};
 
 argsListTail::= COMA IDENT:argument argsListTail:nextArguments                {: RESULT =", "+"String "+argument+nextArguments;:}
             |                                                                 {:RESULT="";:};
