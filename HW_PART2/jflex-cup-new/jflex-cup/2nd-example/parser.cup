@@ -36,8 +36,8 @@ non terminal String     reverse;
 non terminal String     concatenation;
 non terminal String     funcDecList;
 non terminal String funcDec, funcCall,ifElseTail,funcCalls;
-non terminal String argsList,argsListTail;
-non terminal String ifexp;
+non terminal String argsList,argsListTail,expressionList;
+non terminal String ifexp,exp,taf,factor;
 
 /**
  *  Precedence Declarations
@@ -56,7 +56,7 @@ precedence right REVERSE;
 expr_list ::=expr:e  {:System.out.println();:};
 
 
-expr::=          funcDecList:f                                  {:
+expr::=          funcDecList:f    expressionList               {:
                                                                 String str=f;
                                                                 String before="",after="";
                                                                 char[] ch=str.toCharArray();
@@ -82,7 +82,9 @@ expr::=          funcDecList:f                                  {:
                                                             :};
 
 body::=statement:bodyFunction                     {:RESULT = "\treturn "+bodyFunction+";";:};
-
+expressionList::= Epsilon:e expressionList:list       {:System.out.println(e);
+                                                        RESULT=e+"\n"+list;:}
+                |                                       {:RESULT="";:};
 statement::= //ifElse:ifElse                         {: RESULT=ifElse; :}
             Epsilon:expression                   {:RESULT=expression;:}
             |funcDecList:functionCall                {:RESULT=functionCall;:}
@@ -101,31 +103,52 @@ ifElse ::= IF LPAREN prefixList:prefixList RPAREN
 
 prefixList::= Epsilon:str1 PREFIX Epsilon:str2          {:RESULT="("+str2+")"+".startsWith("+str1+")";:};
 
-Epsilon::= reverse:et concatenation:et2                         {:String s;
+Epsilon::= reverse:et concatenation:et2                        {:String s;
                                                                 s=et+et2;
                                                                 RESULT =s;
                                                              :}
-         |IDENT:VAR                                 {:RESULT='"'+VAR+'"';:}
+        |IDENT:VAR                                 {:RESULT='"'+VAR+'"';:}
          |ifElse:ifexp                              {:RESULT=ifexp;:}   ;
 
 
-//ifElseTail::=ifElse:ifexp           {:RESULT=ifexp;:};
-          // |                        {:RESULT="";:};
+ifElseTail::=ifElse:ifexp           {:RESULT=ifexp;:}
+           |                        {:RESULT="";:};
 
 concatenation::= CONCAT Epsilon:epsilon                     {: RESULT="+"+"("+epsilon+")";:}
-                 ;
+                 |                                          {:RESULT="";:};
 
-reverse::= IDENT:string                                {:RESULT='"'+string+'"';:}
-              | REVERSE reverse:epsilonTail            {:
-                                                                String newString="",str=epsilonTail;
-                                                                char character;
-                                                                for (int i=0; i<epsilonTail.length(); i++)
-                                                                   {
-                                                                     character= str.charAt(i); //extracts each character
-                                                                     newString= character+newString; //adds each character in front of the existing string
-                                                                   }
-                                                                   RESULT=newString;:};
-                //|                                          {:RESULT="";:};
+reverse::= //IDENT:string                                {:RESULT='"'+string+'"';:}
+             // | REVERSE reverse:epsilonTail            {:
+          REVERSE exp:epsilonTail                             {:
+                                                               RESULT="new StringBuffer("+epsilonTail+").reverse().toString()";
+                                                               // System.out.println(RESULT);
+                                                                :};
+
+exp::= IDENT :VAR {:RESULT=VAR;:}
+    | ifElse:ifelse {:RESULT="("+ifelse+")";:}
+    | REVERSE exp:exp  {:RESULT="new StringBuffer("+exp+").reverse().toString()";:};
+
+/*
+exp::= taf:e CONCAT taf:t                           {:RESULT=e+"+"+t;:};
+    //|taf:taf                                         {:RESULT=taf;:};
+
+taf::= REVERSE taf:taf                             {:RESULT="new StringBuffer("+taf+").reverse().toString()";
+                                                   // System.out.println(RESULT);
+                                                    :}
+     |factor:F                                    {:RESULT=F;:};
+
+     factor::= IDENT:VAR {:RESULT=VAR;:}
+             | ifElse:ifelse {:RESULT="("+ifelse+")";:}
+             |               {:RESULT="";:};*/
+
+
+
+
+
+
+
+
+
 
 
 funcDecList::= funcDec:fd funcDecList:fdl                            {:RESULT=fd+fdl;:}
