@@ -65,17 +65,12 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 <YYINITIAL> {
 /* operators */
  
- "p"            { return symbol(sym.PRINT);}
+"*"              {return symbol(sym.TIMES);}
  "+"            { return symbol(sym.CONCAT); }
- "-"            { return symbol(sym.MINUS); }
- "*"            { return symbol(sym.TIMES); }
  "("            { return symbol(sym.LPAREN); }
  ")"            { return symbol(sym.RPAREN); }
- ";"            { return symbol(sym.SEMI); }
  "if"            { return symbol(sym.IF); }
  "else"         { return symbol(sym.ELSE);}
- "for"          { return symbol(sym.FOR);}
- "while"        { return symbol(sym.WHILE);}
  "prefix"       { return symbol(sym.PREFIX);}
  "reverse"      { return symbol(sym.REVERSE);}
   "{"           { return symbol(sym.LBRACET);}

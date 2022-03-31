@@ -21,7 +21,7 @@ scan with {: return s.next_token(); :};
  */
 
 /* Terminals (tokens returned by the scanner). */
-terminal            SEMI, CONCAT, MINUS, TIMES, LPAREN, RPAREN, IF, WHILE, FOR, ELSE , PREFIX,REVERSE,PRINT,RBRACET,LBRACET,COMA;
+terminal             CONCAT, LPAREN, RPAREN, IF,  ELSE , PREFIX,REVERSE,RBRACET,LBRACET,COMA,TIMES;
 terminal String     STRING_LITERAL,IDENT;        // our scanner provides numbers as strings
 
 /*  Non terminals */
@@ -38,6 +38,7 @@ non terminal String     funcDecList;
 non terminal String funcDec, funcCall,ifElseTail,funcCalls;
 non terminal String argsList,argsListTail,expressionList,ifcommands;
 non terminal String ifexp,exp,taf,factor,statementList;
+non terminal String FDargsList;
 
 /**
  *  Precedence Declarations
@@ -58,10 +59,12 @@ expr_list ::=expr:e  {:System.out.println();:};
 
 expr::=          statementList:f            {:
                                                                 String str=f;
+                                                                boolean flag=true;
                                                                 String before="",after="";
                                                                 char[] ch=str.toCharArray();
                                                                 for(int i=ch.length-1;i>=0;i--){
                                                                     if(ch[i]=='}' ){
+                                                                                    flag=false;
                                                                                     for(int k=i+1;k<ch.length;k++){
                                                                                         after+=ch[k];
                                                                                     }
@@ -71,18 +74,21 @@ expr::=          statementList:f            {:
                                                                                     break;
                                                                                 }
                                                                 }
+                                                                if(flag){
+                                                                    after=f;
+                                                                }
                                                                 String[] arrOfStr = after.split("\n");
                                                                 String myNewAfter="";
                                                                 for (String a : arrOfStr){
-                                                                    myNewAfter+="System.out.println("+a+");\n";
+                                                                    if(!(a.isEmpty())) myNewAfter+="System.out.println("+a+");\n";
                                                                 }
 
 
                                                                 //RESULT=s;
 
                                                                 System.out.print("\npublic class Main {\n");
-                                                                System.out.print("public static void main(String[] args) {");
-                                                                System.out.printf("  %s",after);
+                                                                System.out.print("public static void main(String[] args) {\n");
+                                                                System.out.printf("  %s",myNewAfter);
                                                                 System.out.print("\n }\n");
                                                                 System.out.printf("\n%s",before);
                                                                 System.out.print("\n}");
@@ -127,45 +133,19 @@ Epsilon::= reverse:et concatenation:et2                        {:String s;
 concatenation::= CONCAT Epsilon:epsilon                     {: RESULT="+"+"("+epsilon+")";:}
                  |                                          {:RESULT="";:};
 
-reverse::= IDENT:string                                {:RESULT='"'+string+'"';:}
+reverse::= IDENT:string                                {:RESULT=string;:}
+          |STRING_LITERAL:s	 {:   RESULT = "\""+s+"\"" ;    :}
           |funcCall:f            {:RESULT=f;:}
           |REVERSE exp:epsilonTail                             {:
                                                                RESULT="new StringBuffer("+epsilonTail+").reverse().toString()";
                                                                // System.out.println(RESULT);
                                                                 :};
 
-exp::= IDENT :VAR {:RESULT='"'+VAR+'"';:}
+exp::= IDENT :VAR {:RESULT=VAR;:}
+    |  STRING_LITERAL:s	 {:   RESULT = "\""+s+"\"" ;    :}
     | ifElse:ifelse {:RESULT="("+ifelse+")";:}
     | REVERSE exp:exp  {:RESULT="new StringBuffer("+exp+").reverse().toString()";:}
-    |funcCall:f {:RESULT=f;:};
-
-/*
-exp::= taf:e CONCAT taf:t                           {:RESULT=e+"+"+t;:};
-    //|taf:taf                                         {:RESULT=taf;:};
-
-taf::= REVERSE taf:taf                             {:RESULT="new StringBuffer("+taf+").reverse().toString()";
-                                                   // System.out.println(RESULT);
-                                                    :}
-     |factor:F                                    {:RESULT=F;:};
-
-     factor::= IDENT:VAR {:RESULT=VAR;:}
-             | ifElse:ifelse {:RESULT="("+ifelse+")";:}
-             |               {:RESULT="";:};*/
-
-
-
-
-
-
-
-
-
-
-/*
-funcDecList::= funcDec:fd funcDecList:fdl                            {:RESULT=fd+fdl;:}
-             //  |funcCall:fc funcDecList:fdl                          {:RESULT=fc+"\n"+fdl;:}
-            //   |expressionList :e                                    {:RESULT=e;:}
-               |                                                     {:RESULT="";:};*/
+    | funcCall:f {:RESULT=f;:};
 
 
 
@@ -181,7 +161,7 @@ argsList::= //IDENT:argument argsListTail:nextArguments                         
 
 argsListTail::= //COMA IDENT:argument argsListTail:nextArguments                 {: RESULT =", "+"String "+argument+nextArguments;:}
            // COMA funcCall:func argsListTail:nextArguments                            {:RESULT=", "+func+nextArguments;:}
-            COMA Epsilon:expression argsListTail:nextArguments                      {:RESULT=", "+"String" +expression+nextArguments;:}
+            COMA Epsilon:expression argsListTail:nextArguments                      {:RESULT=", "+"String " +expression+nextArguments;:}
             |RPAREN                                                                  {:RESULT=")";:};
 
 funcCall::=IDENT:functionName  argsList:myArgs                    {:        String[] arrOfStr = myArgs.split("String");
@@ -195,3 +175,5 @@ funcCall::=IDENT:functionName  argsList:myArgs                    {:        Stri
                                                                                         RESULT=s;
                                                                                         //RESULT="System.out.println("+s+");\n";
                                                                                 :};
+FDargsList::=IDENT:argument FDargsListTail:nextArguments                         {: RESULT="String "+argument+nextArguments;:};
+argsListTail::= //COMA IDENT:argument argsListTail:nextArguments                 {: RESULT =", "+"String "+argument+nextArguments;:}
