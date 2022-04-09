@@ -25,87 +25,60 @@ terminal             CONCAT, LPAREN, RPAREN, IF,  ELSE , PREFIX,REVERSE,RBRACET,
 terminal String     STRING_LITERAL,IDENT;        // our scanner provides numbers as strings
 
 /*  Non terminals */
+non terminal String FDargsList,FDargsListTail;
 non terminal expr_list;
 non terminal expr;      // used to store evaluated subexpressions
-non terminal String     statement,body;
-non terminal booleanEx;
+non terminal String     body;
 non terminal String     ifElse;
 non terminal String     prefixList;
 non terminal String     Epsilon;
 non terminal String     reverse;
 non terminal String     concatenation;
-non terminal String     funcDecList;
-non terminal String funcDec, funcCall,ifElseTail,funcCalls;
-non terminal String argsList,argsListTail,expressionList,ifcommands;
-non terminal String ifexp,exp,taf,factor,statementList;
-non terminal String FDargsList;
+non terminal String funcDec, funcCall;
+non terminal String argsList,argsListTail,ifcommands;
+non terminal String exp,statementList;
+non terminal String printMain;
 
 /**
  *  Precedence Declarations
  */
-precedence left IDENT;
-precedence left PREFIX;
-precedence left  IF,ELSE,TIMES,LPAREN,RPAREN;
+
+precedence left PREFIX,STRING_LITERAL;
+precedence left  IF,ELSE,TIMES,LPAREN,RPAREN,COMA;
 precedence left  CONCAT;
-precedence left  LBRACET;
 precedence right REVERSE;
+//precedence left LBRACET,RBRACET;
 
 /**
  *  The Grammar Rules
  */
 
-expr_list ::=expr:e  {:System.out.println();:};
+//expr_list ::=expr:e  {:System.out.println();:};
 
-
-expr::=          statementList:f            {:
+expr::=    printMain      statementList:f            {:
                                                                 String str=f;
-                                                                boolean flag=true;
                                                                 String before="",after="";
-                                                                char[] ch=str.toCharArray();
-                                                                for(int i=ch.length-1;i>=0;i--){
-                                                                    if(ch[i]=='}' ){
-                                                                                    flag=false;
-                                                                                    for(int k=i+1;k<ch.length;k++){
-                                                                                        after+=ch[k];
-                                                                                    }
-                                                                                    for(int k=0;k<=i;k++){
-                                                                                        before+=ch[k];
-                                                                                    }
-                                                                                    break;
-                                                                                }
-                                                                }
-                                                                if(flag){
-                                                                    after=f;
-                                                                }
+                                                                after=f;
                                                                 String[] arrOfStr = after.split("\n");
                                                                 String myNewAfter="";
                                                                 for (String a : arrOfStr){
-                                                                    if(!(a.isEmpty())) myNewAfter+="System.out.println("+a+");\n";
+                                                                    if(!(a.isEmpty())) myNewAfter+="   System.out.println("+a+");\n";
                                                                 }
-
-
-                                                                //RESULT=s;
-
-                                                                System.out.print("\npublic class Main {\n");
                                                                 System.out.print("public static void main(String[] args) {\n");
-                                                                System.out.printf("  %s",myNewAfter);
+                                                                System.out.printf("%s",myNewAfter);
                                                                 System.out.print("\n }\n");
                                                                 System.out.printf("\n%s",before);
                                                                 System.out.print("\n}");
 
                                                             :};
 
-body::=expressionList:bodyFunction                     {:RESULT = "\treturn "+bodyFunction+";";:};
+printMain ::=                                                                     {:RESULT="\npublic class main {";System.out.println(RESULT);:}    ;
 
-expressionList::= Epsilon:e expressionList:list         {:
-                                                            if (list.isEmpty())RESULT=e;
-                                                            else RESULT=e+"\n"+list;
-                                                        :}
-                |                                       {:RESULT="";:};
-statementList::= funcDec:fd statementList:stmList                      {:RESULT=fd+"\n"+stmList;:}
-            | Epsilon:expression   statementList:stmList                {:RESULT=expression+"\n"+stmList;:}
-           // |funcCall:functionCall  statementList:stmList              {:RESULT=functionCall+"\n"+stmList;:}
-            |                                                          {:RESULT="";:};
+body::=Epsilon:bodyFunction                                                       {:RESULT = "\treturn "+bodyFunction+";";:};
+
+statementList::= funcDec:fd statementList:stmList                                 {:RESULT="\n"+stmList;System.out.println(fd);:}
+            | Epsilon:expression   statementList:stmList                          {:RESULT=expression+"\n"+stmList;:}
+            |                                                                     {:RESULT="";:};
 
 ifElse ::= IF LPAREN prefixList:prefixList RPAREN
                  ifcommands:stm1
@@ -115,65 +88,41 @@ ifElse ::= IF LPAREN prefixList:prefixList RPAREN
                     RESULT= prefixList+" ? "+stm1+" : "+stm2;
                  :};
 
-ifcommands::=Epsilon:e {:   RESULT=e;:};
-           // |funcCall:fc {:RESULT=fc;:};
+ifcommands::=Epsilon:e {:RESULT=e;:};
+
+prefixList::= Epsilon:str1 PREFIX Epsilon:str2                                      {:RESULT="("+str2+")"+".startsWith("+str1+")";:};
+
+Epsilon::= reverse:et concatenation:et2                                             {:String s;s=et+et2;RESULT =s;:}
+        |ifElse:ifexp                                                               {:RESULT=ifexp;:}   ;
+
+concatenation::= CONCAT Epsilon:epsilon                                             {: RESULT="+"+"("+epsilon+")";:}
+                 |                                                                  {:RESULT="";:};
+
+reverse::= IDENT:string                                                             {:RESULT=string;:}
+          |STRING_LITERAL:s	                                                        {:   RESULT = "\""+s+"\"" ;    :}
+          |funcCall:f                                                               {:RESULT=f;:}
+          |REVERSE exp:epsilonTail                                                  {: RESULT="new StringBuffer("+epsilonTail+").reverse().toString()";:};
+
+exp::= IDENT :VAR                                                                   {:RESULT=VAR;:}
+    | STRING_LITERAL:s	                                                            {:   RESULT = "\""+s+"\"" ;    :}
+    | ifElse:ifelse                                                                 {:RESULT="("+ifelse+")";:}
+    | REVERSE exp:exp                                                               {:RESULT="new StringBuffer("+exp+").reverse().toString()";:}
+    | funcCall:f                                                                    {:RESULT=f;:};
 
 
-prefixList::= Epsilon:str1 PREFIX Epsilon:str2          {:RESULT="("+str2+")"+".startsWith("+str1+")";:};
+funcDec::= IDENT:functionName  FDargsList:myArgs LBRACET body:funcBody  RBRACET      {:RESULT="public static String "+functionName+myArgs+"{"
+                                                                                      +System.getProperty("line.separator")+funcBody+" }"+"\n";:};
 
-Epsilon::= reverse:et concatenation:et2                        {:String s;
-                                                                s=et+et2;
-                                                                RESULT =s;
-                                                             :}
-      //  |IDENT:VAR                                 {:RESULT='"'+VAR+'"';:} //den mporoume na exoume maria + reverse maria
-        |ifElse:ifexp                              {:RESULT=ifexp;:}   ;
+argsList::= LPAREN Epsilon:expression argsListTail:nextArguments                     {:RESULT="("+expression+nextArguments;:}
+            |LPAREN RPAREN                                                           {:RESULT="( )";:};
 
-
-
-concatenation::= CONCAT Epsilon:epsilon                     {: RESULT="+"+"("+epsilon+")";:}
-                 |                                          {:RESULT="";:};
-
-reverse::= IDENT:string                                {:RESULT=string;:}
-          |STRING_LITERAL:s	 {:   RESULT = "\""+s+"\"" ;    :}
-          |funcCall:f            {:RESULT=f;:}
-          |REVERSE exp:epsilonTail                             {:
-                                                               RESULT="new StringBuffer("+epsilonTail+").reverse().toString()";
-                                                               // System.out.println(RESULT);
-                                                                :};
-
-exp::= IDENT :VAR {:RESULT=VAR;:}
-    |  STRING_LITERAL:s	 {:   RESULT = "\""+s+"\"" ;    :}
-    | ifElse:ifelse {:RESULT="("+ifelse+")";:}
-    | REVERSE exp:exp  {:RESULT="new StringBuffer("+exp+").reverse().toString()";:}
-    | funcCall:f {:RESULT=f;:};
-
-
-
-funcDec::= IDENT:functionName  argsList:myArgs  LBRACET body:funcBody RBRACET   {:RESULT="public static String "+functionName+myArgs+"{"
-                                                                                                +System.getProperty("line.separator")+funcBody+" }"+"\n";
-                                                                                                //System.out.printf("\n%s",RESULT);
-                                                                                                :};
-
-argsList::= //IDENT:argument argsListTail:nextArguments                         {: RESULT="String "+argument+nextArguments;:}
-           //  LPAREN funcCall:funCall argsListTail:nextArguments                      {:RESULT="("+funCall+nextArguments;:}
-             LPAREN Epsilon:expression argsListTail:nextArguments                    {:RESULT="("+"String "+expression+nextArguments;:}
-             |LPAREN RPAREN                                                           {:RESULT="( )";:};
-
-argsListTail::= //COMA IDENT:argument argsListTail:nextArguments                 {: RESULT =", "+"String "+argument+nextArguments;:}
-           // COMA funcCall:func argsListTail:nextArguments                            {:RESULT=", "+func+nextArguments;:}
-            COMA Epsilon:expression argsListTail:nextArguments                      {:RESULT=", "+"String " +expression+nextArguments;:}
+argsListTail::= COMA Epsilon:expression argsListTail:nextArguments                   {:RESULT=", "+expression+nextArguments;:}
             |RPAREN                                                                  {:RESULT=")";:};
 
-funcCall::=IDENT:functionName  argsList:myArgs                    {:        String[] arrOfStr = myArgs.split("String");
-                                                                                        String myNewArgs="";
-                                                                                        for (String a : arrOfStr){
+funcCall::=IDENT:functionName argsList:myArgs                                        {:String s=functionName+myArgs;RESULT=s;:};
 
-                                                                                            myNewArgs+=a;
+FDargsList::=LPAREN IDENT:argument FDargsListTail:nextArguments                      {: RESULT="("+"String "+argument+nextArguments;:}
+            |  LPAREN RPAREN                                                         {:RESULT="( )";:};
+FDargsListTail::= COMA IDENT:argument FDargsListTail:nextArguments                   {: RESULT =", "+"String "+argument+nextArguments;:}
+            |  RPAREN                                                                {:RESULT=" )";:};
 
-                                                                                        }
-                                                                                        String s=functionName+myNewArgs;
-                                                                                        RESULT=s;
-                                                                                        //RESULT="System.out.println("+s+");\n";
-                                                                                :};
-FDargsList::=IDENT:argument FDargsListTail:nextArguments                         {: RESULT="String "+argument+nextArguments;:};
-argsListTail::= //COMA IDENT:argument argsListTail:nextArguments                 {: RESULT =", "+"String "+argument+nextArguments;:}

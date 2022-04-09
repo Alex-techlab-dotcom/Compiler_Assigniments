@@ -65,11 +65,11 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 <YYINITIAL> {
 /* operators */
  
-"*"              {return symbol(sym.TIMES);}
+"*"             {return symbol(sym.TIMES);}
  "+"            { return symbol(sym.CONCAT); }
  "("            { return symbol(sym.LPAREN); }
  ")"            { return symbol(sym.RPAREN); }
- "if"            { return symbol(sym.IF); }
+ "if"           { return symbol(sym.IF); }
  "else"         { return symbol(sym.ELSE);}
  "prefix"       { return symbol(sym.PREFIX);}
  "reverse"      { return symbol(sym.REVERSE);}
@@ -79,6 +79,7 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
  \"             { stringBuffer.setLength(0); yybegin(STRING); }
  {WhiteSpace}   { /* just skip what was found, do nothing */ }
  {I}            { return symbol(sym.IDENT,yytext()); }
+
 }
 
 <STRING> {
