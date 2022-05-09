@@ -1,0 +1,5 @@
+DIT@UoA patches:
+
+- Single symbol right side rules return value of single visited element
+- Argument "-te" adds "throws Exception" at all visit and accept calls
+- Output file is set to X-jtb.jj when input is X.jj instead of jtb.out.jj

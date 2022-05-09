@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Sealed: true
+Created-By: 1.4.2_05 (Apple Computer, Inc.)
+Main-Class: EDU.purdue.jtb.JTB
+

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="jtb-javacc-2017">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/jtb-javacc-2017.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
