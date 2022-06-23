@@ -3,10 +3,10 @@ import syntaxtree.*;
 import visitor.*;
 
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 
@@ -14,15 +14,10 @@ public class Main {
 
 
     public static void main(String[] args) throws Exception {
-      /*  if (args.length != 1) {
-            System.err.println("Usage: java Main <inputFile>");
-            System.exit(1);
-        }*/
-
 
         for (int i = 0; i < args.length; i++) {
             FileInputStream fis = null;
-            //System.out.println("Input program " + args[i] + " is going to be examined!");
+            //System.out.println("Input program " + args[i] + " is going to be converted to LLVM-IR code!");
             try {
                 fis = new FileInputStream(args[i]);
                 MiniJavaParser parser = new MiniJavaParser(fis);
@@ -30,43 +25,38 @@ public class Main {
                 Goal root = parser.Goal();
 
                 // System.err.println("Program parsed successfully.");
-                /* try {*/
+                 try {
+                     Path path = Paths.get(args[i]);
+                     Path fileName = path.getFileName();
+                     //System.out.println("filename is "+fileName.toString());
+                     String[] arrOfStr = fileName.toString().split("\\.");
+                     String fileName_ll = arrOfStr[0];
+                     //System.out.println("filename is "+fileName_ll);
+                     fileName_ll+=".ll";
+                     File file = new File(fileName_ll);
+                     //Instantiating the PrintStream class
+                     //System.out.println("filename is "+fileName_ll);
+                     PrintStream stream = new PrintStream(file);
+                     System.setOut(stream);
 
-                SymbolTableAdmin symbolTableAdmin = new SymbolTableAdmin();
-                root.accept(symbolTableAdmin, null);
-                _llvm_ir_constructor llvm_ir_constructor = new _llvm_ir_constructor();
-                llvm_ir_constructor.TsymbolTable = symbolTableAdmin.symbolTable;
+                    SymbolTableAdmin symbolTableAdmin = new SymbolTableAdmin();
+                    root.accept(symbolTableAdmin, null);
+                    _llvm_ir_constructor llvm_ir_constructor = new _llvm_ir_constructor();
+                    llvm_ir_constructor.TsymbolTable = symbolTableAdmin.symbolTable;
 
-                // print the symbol table
-                // we check if all class/fields definitions are correct!
-                    /*for (Map.Entry<Pair<String, String>, String> m : symbolTableAdmin.symbolTable.fieldDeclaration.entrySet()) {
-                        //if (!m.getValue()) {
-                        String classType = m.getValue();
-                        //System.out.println(" classes are "+ classType);
-                        if (!symbolTableAdmin.symbolTable.formalTypes.contains(classType)) {
-                            if (symbolTableAdmin.GetclassThatContainsMain().equals(classType))
-                                throw new IllegalArgumentException("class " + classType + " can not be used that way!");
-                            if (!symbolTableAdmin.symbolTable.definedClasses.contains(classType))
-                                throw new IllegalArgumentException("class " + classType + " is not defined!\n");
-                        }
-                        //}
-                    }*/
-                //symbolTableAdmin.symbolTable.printST();
-                // System.out.println("------------------------------typechecking----------------------------------------");
-                //root.accept(typeChecker, null);
-                //System.out.println("------------------------------END-------------------------------------------------");
-                symbolTableAdmin.symbolTable.printVtable();
-                symbolTableAdmin.constructLLVM_IR_Vtable();
-                llvm_ir_constructor.tc.TsymbolTable = symbolTableAdmin.symbolTable;
-                //llvm_ir_constructor.tc.TsymbolTable.printST();
-                root.accept(llvm_ir_constructor.tc, null);
-                root.accept(llvm_ir_constructor, null);
-               /* } catch (Exception e) {
+
+                    symbolTableAdmin.symbolTable.printVtable();
+                    symbolTableAdmin.constructLLVM_IR_Vtable();
+                    llvm_ir_constructor.tc.TsymbolTable = symbolTableAdmin.symbolTable;
+
+                    root.accept(llvm_ir_constructor.tc, null);
+                    root.accept(llvm_ir_constructor, null);
+                } catch (Exception e) {
                     System.out.println(e);
-                    System.out.println("Input program " + args[i] + " is not semanticaly correct!");
+                    System.out.println("Input program " + args[i] + " could not be converted to LLVM-IR code!");
                 } finally {
                     //  System.out.println("The 'try catch' is finished.");
-                }*/
+                }
 
 
             } catch (ParseException ex) {
@@ -1392,7 +1382,36 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
             return "";
         }
 
-        System.out.println("    ;Load the address of the " + arrayName + " array");
+        if (valueExp.equals("true")) {
+            System.out.println("    %_" + tempRegisterCounter + " = add i1 1, 0");
+            valueExp = "%_" + tempRegisterCounter;
+            tempRegisterCounter++;
+        } else if (valueExp.equals("false")) {
+            System.out.println("    %_" + tempRegisterCounter + " = add i1 0, 0");
+            valueExp = "%_" + tempRegisterCounter;
+            tempRegisterCounter++;
+        }
+
+        System.out.println("    %_" + tempRegisterCounter + " = getelementptr i8* , i8** " + arrayName + ", i32 0");
+        tempRegisterCounter++;
+
+        System.out.println("    %_" + tempRegisterCounter + " = load i8* , i8** %_" + String.valueOf(tempRegisterCounter - 1));
+        String arrayAdressReg = "%_" + tempRegisterCounter;
+        tempRegisterCounter++;
+
+        System.out.println("    %_" + tempRegisterCounter + " = bitcast i8* %_" + String.valueOf(tempRegisterCounter - 1) + " to i32*");
+        tempRegisterCounter++;
+
+        System.out.println("    %_" + tempRegisterCounter + " = getelementptr i32 , i32* %_" + String.valueOf(tempRegisterCounter - 1) + ", i32 -1");
+        tempRegisterCounter++;
+
+        System.out.println("    %_" + tempRegisterCounter + " = load i32 , i32* %_" + String.valueOf(tempRegisterCounter - 1));
+        String sizeOfArrayReg = " %_" + tempRegisterCounter;
+        tempRegisterCounter++;
+
+
+
+       /* System.out.println("    ;Load the address of the " + arrayName + " array");
         System.out.println("    %_" + tempRegisterCounter + " = load " + arrayPrimitiveType + ", " + arrayPrimitiveType + "* %" + arrayName);
         String arrayAdressReg = "%_" + tempRegisterCounter;
         tempRegisterCounter++;
@@ -1406,7 +1425,11 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
 
         System.out.println("    %_" + tempRegisterCounter + " = load i32, i32* " + String.valueOf(tempRegisterCounter - 1));
         indexRegister = "%_" + tempRegisterCounter;
-        tempRegisterCounter++;
+        tempRegisterCounter++;*/
+
+       /* System.out.println("     ; Check that the index is greater than zero");
+        System.out.println("    %_" + tempRegisterCounter + " = icmp sge i32 " + indexRegister + " ,0");
+        tempRegisterCounter++;*/
 
         System.out.println("     ; Check that the index is greater than zero");
         System.out.println("    %_" + tempRegisterCounter + " = icmp sge i32 " + indexRegister + " ,0");
@@ -1431,18 +1454,16 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
 
         labelCounter++;
         tempRegisterCounter++;
-        System.out.println("    %_" + tempRegisterCounter + " = add i32 4, " + indexRegister);
-        indexRegister = "%_" + tempRegisterCounter;
-        tempRegisterCounter++;
 
-        System.out.println("    ; Get pointer to the i + 1 element of the array (x + i + 1)");
         System.out.println("    %_" + tempRegisterCounter + " = getelementptr i8, " + arrayPrimitiveType + " " + arrayAdressReg + " , i32 " + indexRegister);
-
-        System.out.println("     ; And store value to that address *" + arrayAdressReg + " = value");
-        System.out.println("    store i32 " + valueExp + ", " + arrayPrimitiveType + " %_" + tempRegisterCounter);
         tempRegisterCounter++;
-        return "";
 
+        System.out.println("    %_" + tempRegisterCounter + " = zext i1 " + valueExp + " to i8");
+        tempRegisterCounter++;
+
+        System.out.println("    store i8 %_" + String.valueOf(tempRegisterCounter - 1) + " , i8* %_" + String.valueOf(tempRegisterCounter - 2));
+
+        return "";
     }
 
     /**
@@ -1558,7 +1579,6 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
 
             varType = getPrimitiveType(varType);
         }
-
         System.out.println("    store " + expressionRegisterType + " " + expressionRegister + ", " + expressionRegisterType + "* " + f0register);
         System.out.println("\n");
         return "";
@@ -1585,7 +1605,7 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
         tempRegisterCounter = 0;
         labelCounter = 0;
         TsymbolTable.llvm_ir_vtable.registerToType.clear();
-        String methodType=methodDeclaration.f1.accept(this, null);
+        String methodType = methodDeclaration.f1.accept(this, null);
      /*   String methodType = methodDeclaration.f1.accept(this, null);
         if (TsymbolTable.definedClasses.contains(methodType))*/
         methodType = getPrimitiveType(methodType);
@@ -1660,7 +1680,6 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
      */
     @Override
     public String visit(NotExpression notExpression, String argu) throws Exception {
-
         String resultRegister = notExpression.f1.accept(this, null);
         System.out.println("    %_" + tempRegisterCounter + " = xor i1 " + resultRegister + " , 1");
         TsymbolTable.llvm_ir_vtable.registerToType.put("%_" + tempRegisterCounter, "i1");
@@ -1679,20 +1698,23 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
         int AlabelCounter = labelCounter;
         labelCounter += 4;
         String leftExpressionRegister = andExpression.f0.accept(this, null);
-        System.out.println("    br i1 " + leftExpressionRegister + ", label %exp_res_" + AlabelCounter + 1 + ", label %exp_res_" + AlabelCounter);
+        System.out.println("    br i1 " + leftExpressionRegister + ", label %exp_res_" + (AlabelCounter + 1) + ", label %exp_res_" + AlabelCounter);
         System.out.println("    exp_res_" + AlabelCounter + ":" + "\n" +
-                "    br label %exp_res_" + AlabelCounter + 3 + "\n");
+                "    br label %exp_res_" + (AlabelCounter + 3) + "\n");
 
-        System.out.println("    exp_res_" + AlabelCounter + 1 + ":");
+        System.out.println("    exp_res_" + (AlabelCounter + 1) + ":");
         String rightExpressionRegister = andExpression.f2.accept(this, null);
-        System.out.println("    br label %exp_res_" + AlabelCounter + 2 + "\n");
+        System.out.println("    br label %exp_res_" + (AlabelCounter + 2) + "\n");
 
-        System.out.println("   exp_res_" + AlabelCounter + 2 + ":" + "\n" +
-                "    br label %exp_res_" + AlabelCounter + 3 + "\n");
-        System.out.println("      exp_res_" + AlabelCounter + 3 + ":" + "\n" +
+        System.out.println("   exp_res_" + (AlabelCounter + 2) + ":" + "\n" +
+                "    br label %exp_res_" + (AlabelCounter + 3) + "\n");
+     /*   System.out.println("      exp_res_" + AlabelCounter + 3 + ":" + "\n" +
                 "    %_" + tempRegisterCounter + " = phi i1  [ 0, %exp_res_" + AlabelCounter + " ], [ %_"
-                + String.valueOf(tempRegisterCounter - 1) + ", %exp_res_" + AlabelCounter + 2 + " ]");
-        TsymbolTable.llvm_ir_vtable.registerToType.put("%_"+tempRegisterCounter,"i1");
+                + String.valueOf(tempRegisterCounter - 1) + ", %exp_res_" + AlabelCounter + 2 + " ]");*/
+        System.out.println("      exp_res_" + (AlabelCounter + 3) + ":" + "\n" +
+                "    %_" + tempRegisterCounter + " = phi i1  [ 0, %exp_res_" + AlabelCounter + " ], [ "
+                + rightExpressionRegister + ", %exp_res_" + (AlabelCounter + 2) + " ]");
+        TsymbolTable.llvm_ir_vtable.registerToType.put("%_" + tempRegisterCounter, "i1");
         tempRegisterCounter++;
         return "%_" + String.valueOf(tempRegisterCounter - 1);
     }
@@ -1707,7 +1729,7 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
         String f0ExpRegister = compareExpression.f0.accept(this, null);
         String f2ExpRegister = compareExpression.f2.accept(this, null);
         System.out.println("    %_" + tempRegisterCounter + " = icmp slt i32 " + f0ExpRegister + " , " + f2ExpRegister);
-        TsymbolTable.llvm_ir_vtable.registerToType.put("%_"+tempRegisterCounter,"i1");
+        TsymbolTable.llvm_ir_vtable.registerToType.put("%_" + tempRegisterCounter, "i1");
         tempRegisterCounter++;
         return "%_" + String.valueOf(tempRegisterCounter - 1);
     }
@@ -1742,10 +1764,19 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
         //String methodType = TsymbolTable.methodDeclaration.get(methodClassPair).type;
         String methodType = tc.FindMethodType(methodName, registerType);
         String methodPrimitiveType = getPrimitiveType(methodType);
+      /*  System.out.println("    ;methodName: "+methodName);
+        System.out.println("    ;registerType: "+registerType);*/
         //System.out.println(methodClassPair.toString());
         int offset = 0;
-        if (TsymbolTable.vtable.VTmethods.containsKey(new Pair<>(methodName, registerType)))
+        if (TsymbolTable.vtable.VTmethods.containsKey(new Pair<>(methodName, registerType))){
             offset = TsymbolTable.vtable.VTmethods.get(methodClassPair) / 8;
+            System.out.println("    ;offset: "+offset);
+        }else{
+            /* this method is inherited from a superClass*/
+            offset = TsymbolTable.getOffsetFromSC(methodName,registerType) / 8;
+            System.out.println("    ;offset: "+offset);
+        }
+
 
         /*
             First load the object pointer
@@ -1793,7 +1824,7 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
                 List<Pair<String, String>> methodArguments = myMethods.get(method).methodArgs;
                 for (int argType = 0; argType < methodArguments.size(); argType++) {
                     String type = methodArguments.get(argType).argumentType();
-                    methodSignature+=", "+getPrimitiveType(type);
+                    methodSignature += ", " + getPrimitiveType(type);
                     /*if (!TsymbolTable.llvm_ir_vtable.typeToPrimitiveTypes.containsKey(type))
                         methodSignature += ", i8 *";
                     else
@@ -1912,10 +1943,32 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
     @Override
     public String visit(ArrayLength arrayLength, String argu) throws Exception {
         String arrayRegister = arrayLength.f0.accept(this, null);
-        System.out.println("    %_" + tempRegisterCounter + " = load i32, i32* " + arrayRegister);
-        TsymbolTable.llvm_ir_vtable.registerToType.put("%_" + tempRegisterCounter, "i32");
+        String arrayPrimitiveType = TsymbolTable.llvm_ir_vtable.registerToType.get(arrayRegister);
+        if (arrayPrimitiveType.equals("i32*")) {
+            System.out.println("    %_" + tempRegisterCounter + " = load i32, i32* " + arrayRegister);
+            TsymbolTable.llvm_ir_vtable.registerToType.put("%_" + tempRegisterCounter, "i32");
+            tempRegisterCounter++;
+            return "%_" + String.valueOf(tempRegisterCounter - 1);
+        }
+      /*  System.out.println("    %_" + tempRegisterCounter + " = getelementptr i8* , i8** " + arrayRegister + ", i32 0");
+        tempRegisterCounter++;*/
+
+        /*System.out.println("    %_" + tempRegisterCounter + " = load i8* , i8** " +arrayRegister);
+        tempRegisterCounter++;*/
+
+        System.out.println("    %_" + tempRegisterCounter + " = bitcast i8* " + arrayRegister + " to i32*");
         tempRegisterCounter++;
-        return "%_" + String.valueOf(tempRegisterCounter - 1);
+
+        System.out.println("    %_" + tempRegisterCounter + " = getelementptr i32 , i32* %_" + String.valueOf(tempRegisterCounter - 1) + ", i32 -1");
+        tempRegisterCounter++;
+
+        System.out.println("    %_" + tempRegisterCounter + " = load i32 , i32* %_" + String.valueOf(tempRegisterCounter - 1));
+        String sizeOfArrayReg = " %_" + tempRegisterCounter;
+        TsymbolTable.llvm_ir_vtable.registerToType.put(sizeOfArrayReg, "i32");
+        tempRegisterCounter++;
+
+        return sizeOfArrayReg;
+
     }
 
     /**
@@ -1933,15 +1986,67 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
         //String valueExp= arrayLookup.f5.accept(this,null);
         //String arrayType = TsymbolTable.llvm_ir_vtable.registerToType.get(arrayName);
         String arrayPrimitiveType = TsymbolTable.llvm_ir_vtable.registerToType.get(arrayName);
-
-      /*  System.out.println("    ;Load the address of the " + arrayName + " array");
-        System.out.println("    %_" + tempRegisterCounter + " = load " + "i32" + ", " + arrayPrimitiveType  + arrayName)*/
-        ;
         String arrayAdressReg = arrayName;
-        //tempRegisterCounter++;
+        if (arrayPrimitiveType.equals("i32*")) {
 
-        System.out.println("    ; Load the size of the array (first integer of the array)");
-        System.out.println("    %_" + tempRegisterCounter + " = load i32, i32* " + arrayAdressReg);
+            //tempRegisterCounter++;
+
+            System.out.println("    ; Load the size of the array (first integer of the array)");
+            System.out.println("    %_" + tempRegisterCounter + " = load i32, i32* " + arrayAdressReg);
+            String sizeOfArrayReg = " %_" + tempRegisterCounter;
+            tempRegisterCounter++;
+
+            System.out.println("     ; Check that the index is greater than zero");
+            System.out.println("    %_" + tempRegisterCounter + " = icmp sge i32 " + indexRegister + " ,0");
+            tempRegisterCounter++;
+
+            System.out.println("    ;Chech that the index is less than the size of the array");
+            System.out.println("    %_" + tempRegisterCounter + " = icmp slt i32 " + indexRegister + ", " + sizeOfArrayReg);
+            tempRegisterCounter++;
+
+            System.out.println("    %_" + tempRegisterCounter + " = and i1 %_" + String.valueOf(tempRegisterCounter - 1) +
+                    ", %_" + String.valueOf(tempRegisterCounter - 2));
+
+            System.out.println("    br i1 %_" + tempRegisterCounter + ", label %oob_ok_" + labelCounter + ", label %oob_err_" + labelCounter);
+
+            System.out.println("    ; Else throw out of bounds exception");
+            System.out.println("    oob_err_" + labelCounter + ":");
+            System.out.println("    call void @throw_oob()");
+            System.out.println("    br label %oob_ok_" + labelCounter);
+
+            System.out.println("    ; All ok, we can safely index the array now\n" +
+                    "    oob_ok_" + labelCounter + ":");
+
+            labelCounter++;
+            tempRegisterCounter++;
+            System.out.println("    %_" + tempRegisterCounter + " = add i32 1, " + indexRegister);
+            indexRegister = "%_" + tempRegisterCounter;
+            tempRegisterCounter++;
+
+            System.out.println("    ; Get pointer to the i + 1 element of the array (x + i + 1)");
+            System.out.println("    %_" + tempRegisterCounter + " = getelementptr i32, i32* " + arrayAdressReg + " , i32 " + indexRegister);
+
+            tempRegisterCounter++;
+            System.out.println(" %_" + tempRegisterCounter + " = load i32, i32* %_" + String.valueOf(tempRegisterCounter - 1));
+            TsymbolTable.llvm_ir_vtable.registerToType.put("%_" + tempRegisterCounter, "i32");
+            tempRegisterCounter++;
+            System.out.println("\n");
+            return "%_" + String.valueOf(tempRegisterCounter - 1);
+        }
+
+       /* System.out.println("    %_" + tempRegisterCounter + " = getelementptr i8 , i8* " + arrayName + ", i32 0");
+        tempRegisterCounter++;*/
+
+        /*System.out.println("    %_" + tempRegisterCounter + " = load i8* , i8** " + arrayAdressReg);
+        tempRegisterCounter++;*/
+
+        System.out.println("    %_" + tempRegisterCounter + " = bitcast i8* " + arrayAdressReg + " to i32*");
+        tempRegisterCounter++;
+
+        System.out.println("    %_" + tempRegisterCounter + " = getelementptr i32 , i32* %_" + String.valueOf(tempRegisterCounter - 1) + ", i32 -1");
+        tempRegisterCounter++;
+
+        System.out.println("    %_" + tempRegisterCounter + " = load i32 , i32* %_" + String.valueOf(tempRegisterCounter - 1));
         String sizeOfArrayReg = " %_" + tempRegisterCounter;
         tempRegisterCounter++;
 
@@ -1968,20 +2073,19 @@ class _llvm_ir_constructor extends GJDepthFirst<String, String> {
 
         labelCounter++;
         tempRegisterCounter++;
-        System.out.println("    %_" + tempRegisterCounter + " = add i32 1, " + indexRegister);
-        indexRegister = "%_" + tempRegisterCounter;
+
+        System.out.println("    %_" + tempRegisterCounter + " = getelementptr i8, " + arrayPrimitiveType + " " + arrayAdressReg + " , i32 " + indexRegister);
         tempRegisterCounter++;
 
-        System.out.println("    ; Get pointer to the i + 1 element of the array (x + i + 1)");
-        System.out.println("    %_" + tempRegisterCounter + " = getelementptr i32, i32* " + arrayAdressReg + " , i32 " + indexRegister);
-
+        System.out.println("    %_" + tempRegisterCounter + " = load i8 , i8* %_" + String.valueOf(tempRegisterCounter - 1));
         tempRegisterCounter++;
-        System.out.println(" %_" + tempRegisterCounter + " = load i32, i32* %_" + String.valueOf(tempRegisterCounter - 1));
-        TsymbolTable.llvm_ir_vtable.registerToType.put("%_" + tempRegisterCounter, "i32");
+
+        System.out.println("    %_" + tempRegisterCounter + " = trunc i8 %_" + String.valueOf(tempRegisterCounter - 1) + " to i1");
+
+        TsymbolTable.llvm_ir_vtable.registerToType.put("%_" + tempRegisterCounter, "i1");
         tempRegisterCounter++;
         System.out.println("\n");
         return "%_" + String.valueOf(tempRegisterCounter - 1);
-
     }
 
     /**
@@ -2582,8 +2686,8 @@ class SymbolTableAdmin extends GJDepthFirst<String, String> {
             throw new IllegalArgumentException("Superclass is not defined!\n");
 //        if (symbolTable.inheritsFrom.containsKey(superClass))
 //            throw new IllegalArgumentException("multiLevel inheritance is not accepted!\n");
-        if (symbolTable.inheritsFrom.containsValue(superClass))
-            throw new IllegalArgumentException("hierarchical inheritance is not accepted!\n");
+       /* if (symbolTable.inheritsFrom.containsValue(superClass))
+            throw new IllegalArgumentException("hierarchical inheritance is not accepted!\n");*/
         symbolTable.definedClasses.add(classname);
 
         // classname INFERITSFROM superclass
@@ -2651,7 +2755,7 @@ class SymbolTableAdmin extends GJDepthFirst<String, String> {
      */
     @Override
     public String visit(MethodDeclaration methodDeclaration, String argu) throws Exception {
-       // System.out.println("2642");
+        // System.out.println("2642");
         String argumentList = methodDeclaration.f4.present() ? methodDeclaration.f4.accept(this, null) : "";
 
         String methodType = methodDeclaration.f1.accept(this, null);

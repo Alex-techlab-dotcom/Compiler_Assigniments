@@ -182,7 +182,9 @@ public class SymbolTable {
     public int getOffsetFromSC(String methodName, String className) {
         while (true) {
             Pair<String, String> methodClassPair = new Pair<>(methodName, className);
+            //System.out.println(methodClassPair.toString());
             if (this.methodDeclaration.containsKey(methodClassPair)) {
+              //  System.out.println("inside");
                 // if (!TsymbolTable.fieldDeclarationMap.containsKey(methodClassPair)) {
                 //we must first check that the className is not the super class of its generation
                 return this.vtable.VTmethods.get(methodClassPair);
@@ -225,6 +227,7 @@ public class SymbolTable {
                     this.vtable.classMemoryEndMethods.put(currentClassName, offset);
                 }
                 if (ExistsInSuperClass(methodName, superClass)) {
+                    //System.out.println("ExistsInSuperClass is true :"+currentClassName+"|"+methodName);
                     int offsetFromSuperclass = getOffsetFromSC(methodName,superClass);
                     //System.out.println("205");
                     this.vtable.VTmethods.put(new Pair<>(methodName, currentClassName), offsetFromSuperclass);
@@ -246,6 +249,14 @@ public class SymbolTable {
             this.vtable.classMemoryEndMethods.put(currentClassName, offset);
             previousClass = currentClassName;
         }
+
+       /* for (Map.Entry<Pair<String, String>, Integer> VTvars : this.vtable.VTmethods.entrySet()) {
+            String currentClassName1 = VTvars.getKey().ClassName;
+            String varName = VTvars.getKey().VariableName;
+            System.out.println(currentClassName1+":"+varName+" = "+VTvars.getValue());
+                   *//* if (currentClassName.equals(currentClassName1))
+                        System.out.println(currentClassName1 + "." + varName + " : " + VTvars.getValue());*//*
+        }*/
 
         //System.out.println("223 size is "+this.vtable.VTmethods.size());
 

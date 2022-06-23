@@ -1,4 +1,4 @@
-
+/*
 class Example {
     public static void main(String[] args) {
       System.out.println((new A().fooo(1,4,new A())));
@@ -84,33 +84,32 @@ class D{
         return 1;
     }
 }
+*/
 
 
-/*
 class Example {
     public static void main(String[] a) {
-        Base b;
-        Derived d;
+        int x;
+        int y;
 
-        b = new Base();
-        d = new Derived();
+        x=1;
+        y=2;
 
-        System.out.println(b.set(2));
-
-        //b = d;
-
-       // System.out.println(d.set(2));
+        while(x<y){
+            System.out.println(x);}
     }
 }
 
 class Base {
     int data;
-    int[] k;
+    boolean[] k;
     public int set(int x) {
      // data=2;
       //k=new int[3];
+        k=new boolean[10];
+        k[1]=true;
         x=1;
-        if(!(0<x)){
+        if(k[1]){
             System.out.println(1);
             x=7;
             if (5<x){
@@ -120,12 +119,12 @@ class Base {
         }else
             System.out.println(0);
 
-       *//* k[0]=2;
+
         while(x<10){
             System.out.println(x);
             x=x+1;
         }
-        x=(this.get(data))*(data*(this.get(data)));*//*
+        x=(this.get(data))*(data*(this.get(data)));
 
         return x;
     }
@@ -142,17 +141,6 @@ class Base {
     }
 }
 
-class Derived extends Base {
-    public int set(int x) {
-        data = x * 2;
-
-        return data +(this.get(x));
-    }
-    public int get(int k) {
-        k = 2;
-        return k;
-    }
-}*/
 
 /*
 class Example {
@@ -236,5 +224,15 @@ class Test{
         }
 
         return k;
+    }
+}*/
+
+/*
+class Example {
+    public static void main(String[] a) {
+       if(!true)
+            System.out.println(1);
+       else
+           System.out.println(2);
     }
 }*/
